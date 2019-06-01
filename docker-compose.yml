@@ -1,0 +1,9 @@
+version: '2'
+services:
+  redis:
+    image: redis:latest
+    command: redis-server --appendonly yes
+    ports:
+      - 6379:6379
+    volumes:
+      - /Users/cmaklin/workspace/hackathon/fitbit-subscription-example/data:/data
