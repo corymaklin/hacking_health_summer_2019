@@ -5,6 +5,17 @@ var crypto = require("crypto");
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 var Redis = require("redis");
+const mongoose = require('mongoose');
+
+// Creates database if it can't find it or uses it if it already exists
+mongoose.connect('mongodb://localhost/users')
+
+const usersSchema = mongoose.Schema({
+	id: String,
+	steps: Number
+})
+
+var User = mongoose.model('User', usersSchema)
 
 var rds = Redis.createClient();
 
@@ -57,6 +68,18 @@ app.get("/webhook", (req, res) => {
 	}
 });
 
+app.get("/users", (req, res) => {
+	User.find({}, (err, users) => {
+		if (err) {
+			console.log('No ERROR!')
+			console.log(err)
+		} else {
+			console.log('responding with users...')
+			res.send(users)
+		}
+	})
+});
+
 app.post("/webhook", jsonParser, (req, res) => {
     // console.log(res)
 
@@ -102,6 +125,23 @@ var readFitbitData = function( data, cb ){
 		client.get( _url, access_token, fitbit_user )
 			.then(function (results) {
 				console.log("RECEIVED CHANGED DATA `" + type + "` for user `" + user_id + "`", results[0] );
+
+				// console.log(results[0].activities[0].steps)
+
+				const u = new User({
+					id: user_id,
+					steps: results[0].activities[0].steps
+				});
+
+				u.save((err, user) => {
+					if (err) {
+						console.log('Something went wrong');
+					} else {
+						console.log('We just saved a user');
+						console.log(user);
+					}
+				});
+
 				cb( null );
 			}).catch(function (error) {
 				cb( error );

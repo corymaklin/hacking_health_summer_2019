@@ -2,8 +2,16 @@ version: '2'
 services:
   redis:
     image: redis:latest
+    container_name: redis
     command: redis-server --appendonly yes
     ports:
       - 6379:6379
     volumes:
-      - /Users/cmaklin/workspace/hackathon/fitbit-subscription-example/data:/data
+      - ./redisdata:/data
+  mongo:
+    container_name: mongo
+    image: mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongodbdata:/data/db
