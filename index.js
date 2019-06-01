@@ -1,7 +1,6 @@
 require('dotenv').config()
 const fetch = require('node-fetch');
 var async = require("async");
-var crypto = require("crypto");
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 var Redis = require("redis");
@@ -11,8 +10,10 @@ const mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost/users')
 
 const usersSchema = mongoose.Schema({
-	id: String,
-	steps: Number
+	_id: String,
+	steps: Number,
+	startTime: String,
+	fullName: String
 })
 
 var User = mongoose.model('User', usersSchema)
@@ -94,17 +95,6 @@ app.post("/webhook", jsonParser, (req, res) => {
     res.sendStatus( 204 );
 });
 
-// check the fitbit webhook signature
-var testSignature = function( sig, data ){
-	var hmac = crypto.createHmac('sha1', process.env.FITBIT_SECERT+'&')
-	hmac.update(JSON.stringify(data))
-	if ( sig === hmac.digest('base64') ){
-		return true
-	} else {
-		return false
-	}
-}
-
 // function used by async to receive the data of each subscription event
 var readFitbitData = function( data, cb ){
 	// grab the relevant data
@@ -122,31 +112,46 @@ var readFitbitData = function( data, cb ){
 		}
 		// create fitbit url based on type
 		var _url = getFitbitUrl( type, { date: date } );
+
 		client.get( _url, access_token, fitbit_user )
 			.then(function (results) {
 				console.log("RECEIVED CHANGED DATA `" + type + "` for user `" + user_id + "`", results[0] );
 
-				// console.log(results[0].activities[0].steps)
+				startTime = results[0].activities[0].originalStartTime
+				steps = results[0].summary.steps
 
-				const u = new User({
-					id: user_id,
-					steps: results[0].activities[0].steps
-				});
+				client.get("/profile.json", access_token).then(results => {
 
-				u.save((err, user) => {
-					if (err) {
-						console.log('Something went wrong');
-					} else {
-						console.log('We just saved a user');
-						console.log(user);
-					}
+					User.update(
+						{
+							_id: user_id,
+						},
+						{
+							_id: user_id,
+							steps: steps,
+							startTime: startTime,
+							fullName: results[0].user.fullName
+						},
+						{
+							upsert: true
+						}, (err, user) => {
+							if (err) {
+								console.log('Something went wrong');
+							} else {
+								console.log('We just saved a user');
+								console.log(user);
+							}
+						}
+					)
+
+				}).catch(err => {
+					res.status(err.status).send(err);
 				});
 
 				cb( null );
 			}).catch(function (error) {
 				cb( error );
-			});
-		
+			});		
 	});
 };
 
