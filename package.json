@@ -11,6 +11,7 @@
     "express": "^4.17.1",
     "faker": "^4.1.0",
     "fitbit-node": "^2.2.0",
+    "moment": "^2.24.0",
     "mongoose": "^5.5.12",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0"

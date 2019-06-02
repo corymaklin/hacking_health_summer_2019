@@ -1,13 +1,13 @@
 const faker = require('faker');
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 // Creates database if it can't find it or uses it if it already exists
 mongoose.connect('mongodb://localhost/users')
 
 const usersSchema = mongoose.Schema({
 	_id: String,
-	steps: Number,
-	startTime: String,
+	steps: Array,
 	fullName: String
 })
 
@@ -15,14 +15,22 @@ var User = mongoose.model('User', usersSchema)
 
 var count = 10
 
-for (i = 0; i < 10; i++) {
-    var date = new Date();
-    var dateISOString = date.toISOString();
+for (let i = 0; i < 10; i++) {
+
+    let today = moment();
+
+    dates = []
+
+    for (let j = 0; j < 30; j++) {
+        dates.push(today.format('YYYY-MM-DD'));
+        today = today.subtract(1, 'days')
+    }
+
+    steps = dates.map(date => ({ dateTime: date, value: Math.floor(Math.random() * 5000 + 1000) }))
     
     u = new User({
         _id: count,
-        steps: Math.floor(Math.random() * 6000 + 3000),
-        startTime: dateISOString,
+        steps: steps,
         fullName: faker.name.findName(),
     })
 
@@ -38,4 +46,3 @@ for (i = 0; i < 10; i++) {
 
     count++;
 }
- 

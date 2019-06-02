@@ -11,8 +11,9 @@ mongoose.connect('mongodb://localhost/users')
 
 const usersSchema = mongoose.Schema({
 	_id: String,
-	steps: Number,
-	startTime: String,
+	// steps: Number,
+	steps: Array,
+	// startTime: String,
 	fullName: String
 })
 
@@ -117,35 +118,49 @@ var readFitbitData = function( data, cb ){
 			.then(function (results) {
 				console.log("RECEIVED CHANGED DATA `" + type + "` for user `" + user_id + "`", results[0] );
 
-				startTime = results[0].activities[0].originalStartTime
-				steps = results[0].summary.steps
+				// startTime = results[0].activities[0].originalStartTime
+				// steps = results[0].summary.steps
+				console.log(results[0].summary)
+
+				console.log(fitbit_user)
 
 				client.get("/profile.json", access_token).then(results => {
 
-					User.update(
-						{
-							_id: user_id,
-						},
-						{
-							_id: user_id,
-							steps: steps,
-							startTime: startTime,
-							fullName: results[0].user.fullName
-						},
-						{
-							upsert: true
-						}, (err, user) => {
-							if (err) {
-								console.log('Something went wrong');
-							} else {
-								console.log('We just saved a user');
-								console.log(user);
+					fullName = results[0].user.fullName
+
+					client.get('/activities/steps/date/today/1m.json', access_token).then(results => {
+
+						// console.log(results[0][["activities-steps"]])
+						steps = results[0]["activities-steps"]
+
+						User.update(
+							{
+								_id: user_id,
+							},
+							{
+								_id: user_id,
+								steps: steps,
+								// startTime: startTime,
+								fullName: fullName,
+							},
+							{
+								upsert: true
+							}, (err, user) => {
+								if (err) {
+									console.log('Something went wrong');
+									console.log(err)
+								} else {
+									console.log('We just saved a user');
+									console.log(user);
+								}
 							}
-						}
-					)
+						)
+					})
 
 				}).catch(err => {
-					res.status(err.status).send(err);
+					// res.status(err.status).send(err);
+					console.log('an error occurred')
+					console.log(err)
 				});
 
 				cb( null );
